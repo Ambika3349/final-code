@@ -732,7 +732,11 @@ for(String file : files){
 file = file.trim();   
 %>
 
-<a href="uploads/<%=file%>" target="_blank">View File</a><br>
+<%
+String displayName = file.replaceFirst("^\\d+_", "");
+%>
+
+<a href="uploads/<%=file%>" target="_blank"><%=displayName%></a><br>
 
 <%
 }
@@ -892,14 +896,15 @@ function editRecord(
 		let link = document.createElement("a");
 
 		link.href = "uploads/" + file;
-		link.innerText =file;
+		let displayName = file.replace(/^\d+_/, "");
+		link.innerText = displayName;
 		link.target = "_blank";
 
 		let div = document.createElement("div");
 
 		div.innerHTML =
-		    "<a href='uploads/" + file + "' target='_blank'>" + file + "</a> " +
-		    "<button type='button' onclick=\"removeExistingFile('" + file + "')\">Remove</button>";
+			"<a href='uploads/" + file + "' target='_blank'>" + file.replace(/^\d+_/, "") + "</a>" +
+		    "<button type='button' onclick=\"removeExistingFile('" + file + "',this)\">Remove</button>";
 
 		fileContainer.appendChild(div);
 
@@ -1081,7 +1086,6 @@ function validateForm(){
         setError("doc","Please upload at least one file");
         valid = false;
     }
-
     let fromDate = document.getElementById("perform").value;
     let toDate = document.getElementById("perupto").value;
 
@@ -1250,7 +1254,7 @@ function uploadFile(){
 
             let div = document.createElement("div");
             div.innerHTML =
-                "📄 " + filename +
+            	"📄 " + filename.replace(/^\d+_/, "") +
                 " <button type='button' onclick=\"removeNewFile('" + filename + "', this)\">Remove</button>";
 
             container.appendChild(div);
@@ -1275,7 +1279,9 @@ function uploadFile(){
             count + " file" + (count > 1 ? "s" : "");
 
         fileInput.value = "";
-
+        
+        document.getElementById("docError").innerText = "";
+        document.getElementById("doc").classList.remove("error-border");
     })
     .catch(error => {
         console.log("Upload error:", error);
@@ -1309,28 +1315,19 @@ function removeNewFile(fileName, btn){
 <script>
 let removedExistingFiles = [];
 
-function removeExistingFile(fileName){
+function removeExistingFile(fileName, btn){
 
-    // remove from UI
-    let container = document.getElementById("uploadedFiles");
-    let items = container.children;
-
-    for(let i=0; i<items.length; i++){
-        if(items[i].innerText.includes(fileName)){
-            items[i].remove();
-            break;
-        }
+    if(btn && btn.parentElement){
+        btn.parentElement.remove();
     }
 
-    // update hidden field (remove that file)
     let hidden = document.getElementById("existingDoc").value.split(",");
 
     hidden = hidden.filter(f => f.trim() !== fileName);
 
     document.getElementById("existingDoc").value = hidden.join(",");
 
-    // update count
-    let count = hidden.length;
+    let count = hidden.filter(f => f !== "").length;
 
     document.getElementById("fileCountBox").innerText =
         count + " file" + (count > 1 ? "s" : "");
